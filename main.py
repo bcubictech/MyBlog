@@ -3,7 +3,7 @@ from flask import abort, render_template, redirect, url_for, flash
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
-from MyBlog.forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from app import app
 from model import db, BlogPost, User, Comment
 
