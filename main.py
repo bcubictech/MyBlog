@@ -1,11 +1,83 @@
 from functools import wraps
 from flask import abort, render_template, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
-from app import app
-from model import db, BlogPost, User, Comment
+# from app import app
+from flask import Flask
+from flask_bootstrap import Bootstrap
+from flask_ckeditor import CKEditor
+from flask_login import LoginManager
+from flask_gravatar import Gravatar
+# from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
+from flask_login import UserMixin
+# from model import BlogPost, User, Comment
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+ckeditor = CKEditor(app)
+Bootstrap(app)
+
+
+gravatar = Gravatar(app,
+                    size=100,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
+    name = db.Column(db.String(1000))
+
+    posts = relationship("BlogPost", back_populates="author")
+    comments = relationship("Comment", back_populates="user")
+
+
+class BlogPost(db.Model):
+    __tablename__ = "blog_posts"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(250), unique=True, nullable=False)
+    subtitle = db.Column(db.String(250), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    img_url = db.Column(db.String(250), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    author = relationship("User", back_populates="posts")
+    comments = relationship("Comment", back_populates="post")
+
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    comment = db.Column(db.Text, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = relationship("User", back_populates="comments")
+
+    post_id = db.Column(db.Integer, db.ForeignKey('blog_posts.id'))
+    post = relationship("BlogPost", back_populates="comments")
+
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 
